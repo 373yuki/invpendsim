@@ -32,6 +32,8 @@ var data = [];
 var state = new Array(4).fill(0.0);
 var u_stack = new Array(Math.ceil(delay / dt)).fill(0.0);
 
+var disturbance = 0.0;
+
 var integral = 0.0;
 var amp = 0.5;
 var freq = 1.0;
@@ -70,9 +72,10 @@ function init() {
 
     // 箱を作成
     const floor_geometry = new THREE.BoxGeometry(width * 3, height * 3, 10);
-    const arm_geometry = new THREE.BoxGeometry(20, 10, 210);
+    const arm_geometry = new THREE.BoxGeometry(15, 10, 210);
     const box_geometry = new THREE.BoxGeometry(100, 50, 50);
-    const circle_geometry = new THREE.CylinderGeometry(15, 15, 20, 32);
+    const wheel_geometry = new THREE.CylinderGeometry(18, 18, 20, 32);
+    const circle_geometry = new THREE.CylinderGeometry(10, 10, 20, 32);
     const arm_material = new THREE.MeshStandardMaterial({
         color: 0xff0000,
         alpha: 0.8,
@@ -82,6 +85,9 @@ function init() {
     });
     const box_material = new THREE.MeshLambertMaterial({
         color: 0x333333,
+    });
+    const wheel_material = new THREE.MeshStandardMaterial({
+        color: 0x00ff00,
     });
     const floor_material = new THREE.MeshStandardMaterial({
         color: 0xfffff0,
@@ -103,6 +109,8 @@ function init() {
 
     const arm = new THREE.Mesh(arm_geometry, arm_material);
     const box = new THREE.Mesh(box_geometry, box_material);
+    const tire1 = new THREE.Mesh(wheel_geometry, wheel_material);
+    const tire2 = new THREE.Mesh(wheel_geometry, wheel_material);
     arm.castShadow = true;
     box.castShadow = true;
     const circle = new THREE.Mesh(circle_geometry, circle_material);
@@ -110,6 +118,7 @@ function init() {
     const floor = new THREE.Mesh(floor_geometry, floor_material);
     floor.receiveShadow = true;
     const arm_group = new THREE.Group();
+    const cart_group = new THREE.Group();
 
     arm.position.y -= 80;
     arm.position.z += 100;
@@ -119,14 +128,25 @@ function init() {
     arm_group.add(arm);
     arm_group.add(circle);
 
+    tire1.position.y -= 20;
+    tire1.position.z += 25;
+    tire1.position.x += 30;
+    tire2.position.y -= 20;
+    tire2.position.z += 25;
+    tire2.position.x -= 30;
+
+    cart_group.add(box)
+    cart_group.add(tire1)
+    cart_group.add(tire2)
+
     scene.add(arm_group);
-    scene.add(box);
+    scene.add(cart_group);
     scene.add(floor);
     scene.add(led);
 
     arm_group.position.y += 50;
     arm_group.position.z += 50;
-    box.position.y -= 0;
+    cart_group.position.y -= 0;
 
     led.position.z += 380;
     led.position.x += 000;
@@ -189,6 +209,7 @@ function init() {
                 t += dt;
                 prev_state = state;
                 state = n_state;
+                disturbance = 0.0;
             }
             if (t > 8.0) {
                 d_pos.shift();
@@ -207,7 +228,7 @@ function init() {
         // レンダリング
         arm_group.rotation.y = angle;
         arm_group.position.x = pos * 1000;
-        box.position.x = pos * 1000;
+        cart_group.position.x = pos * 1000;
         renderer.render(scene, camera);
         window.requestAnimationFrame(drawPlot);
 
@@ -294,7 +315,7 @@ function createFilename() {
 function rk4(state, next_state, u, h) {
     const z = state[0];
     const dz = state[1];
-    const theta = state[2];
+    const theta = state[2] + disturbance;
     const dtheta = state[3];
 
     var k1 = new Array(4);
@@ -542,3 +563,11 @@ function basic_legend(container) {
         colors: ["#e4548e", "#2d91e5", "#e7cf00", "#0cae7b", "#a435c0"],
     });
 }
+
+
+document.addEventListener('keydown',
+    event => {
+        if (event.key === 'd') {
+            disturbance = 0.05;
+        }
+    });
