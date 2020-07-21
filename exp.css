@@ -1,0 +1,25 @@
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+  }
+
+    .canvas-wrapper {
+        position: relative;
+    }
+    .canvas-wrapper canvas{
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    .canvas-wrapper div{
+        position: absolute;
+        left: 0;
+        top: 0;
+        max-width: 500px; /* 最大幅 */
+        min-width: 300px; /* 最小幅 */
+        width : 40%;
+        height: 280px;
+    }
+
+</style>
