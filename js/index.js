@@ -222,6 +222,8 @@ function init() {
             angle = state[2];
             led_in_material.color = new THREE.Color(0xff9933);
         } else {
+            pos = state[0];
+            angle = state[2];
             led_in_material.color = new THREE.Color(0x696969);
         }
 
