@@ -1,3 +1,6 @@
+// このソースコードを眺めている方へ
+// 突貫工事プログラムで読みにくい部分もあるかと思いますが，ご容赦ください
+// 2020.8.31 Y.Minami
 window.addEventListener("DOMContentLoaded", init);
 
 const dt = 0.001; // [sec]
@@ -26,6 +29,7 @@ var gain1 = 10;
 var gain2 = 0.0;
 var gain3 = 0.0;
 var gain4 = 0.0;
+var dist_set = 0.05;
 var z_ini = 0.1;
 var theta_ini = 0.0;
 var data = [];
@@ -184,7 +188,7 @@ function init() {
                 var u = 0.0;
                 if (mode == "Feedback") {
                     ///u = pid(state, ref);
-                    u = sf(state);
+                    u = sat(sf(state));
                 } else if (input_wave == "step") {
                     u = amp;
                 } else if (input_wave == "sin") {
@@ -305,7 +309,7 @@ function saveButton() {
 function createFilename() {
     var filename;
     if (mode == "Feedback") {
-        filename = "data_fb_" + ".csv";
+        filename = "data" + ".csv";
     } else {
         filename = "data_ff_" + amp.toFixed(3) + "_";
         filename += freq.toFixed(3) + ".csv";
@@ -361,11 +365,6 @@ function rk4(state, next_state, u, h) {
         if (Math.abs(u) < 0.2) {
             // 静摩擦
             u_actual = 0.0;
-        } else if (u > VMAX) {
-            //飽和
-            u_actual = VMAX;
-        } else if (u < -VMAX) {
-            u_actual = -VMAX;
         } else {
             u_actual = u;
         }
@@ -378,11 +377,6 @@ function rk4(state, next_state, u, h) {
         if (Math.abs(u) < 0.2) {
             // 静摩擦
             u_actual = 0.0;
-        } else if (u > VMAX) {
-            //飽和
-            u_actual = VMAX;
-        } else if (u < -VMAX) {
-            u_actual = -VMAX;
         } else {
             u_actual = u;
         }
@@ -390,6 +384,18 @@ function rk4(state, next_state, u, h) {
 
         return 1.0 / delta0 * (-m * m * l * l * dtheta * dtheta * Math.sin(theta) * Math.cos(theta) + Dx * m * l * dz * Math.cos(theta) + (M + m) * m * g * l * Math.sin(theta) - (M + m) * Dth * dtheta - alp * m * l * Math.cos(theta) * u_actual);
     }
+}
+
+function sat(u) {//飽和
+    var u_actual;
+    if (u > VMAX) {
+        u_actual = VMAX;
+    } else if (u < -VMAX) {
+        u_actual = -VMAX;
+    } else {
+        u_actual = u;
+    }
+    return u_actual;
 }
 
 function sf(state) {
@@ -441,30 +447,36 @@ var createGUI = function () {
             theta_ini = value;
         })
         .name("theta(0)");
-    fb.add(text, "gain1", 0, 500.0)
+    fb.add(text, "gain1", 0, 1000.0)
         .step(1)
         .onChange(function (value) {
             gain1 = value;
         })
         .name("k1");
-    fb.add(text, "gain2", 0, 100.0)
+    fb.add(text, "gain2", 0, 500.0)
         .step(1)
         .onChange(function (value) {
             gain2 = value;
         })
         .name("k2");
-    fb.add(text, "gain3", 0, 500.0)
+    fb.add(text, "gain3", 0, 1000.0)
         .step(1)
         .onChange(function (value) {
             gain3 = value;
         })
         .name("k3");
-    fb.add(text, "gain4", 0, 100.0)
+    fb.add(text, "gain4", 0, 500.0)
         .step(1)
         .onChange(function (value) {
             gain4 = value;
         })
         .name("k4");
+    fb.add(text, "disturbance", -0.3, 0.3)
+        .step(0.05)
+        .onChange(function (value) {
+            dist_set = value;
+        })
+        .name("disturbance");
     fb.open();
 
     var ff = gui.addFolder("Feedforward");
@@ -498,6 +510,7 @@ var guiController = function () {
     this.gain2 = gain2;
     this.gain3 = gain3;
     this.gain4 = gain4;
+    this.disturbance = dist_set;
     this.start_stop = startButton;
     this.reset = resetButton;
     this.save = saveButton;
@@ -570,6 +583,6 @@ function basic_legend(container) {
 document.addEventListener('keydown',
     event => {
         if (event.key === 'd') {
-            disturbance = 0.05;
+            disturbance = dist_set;
         }
     });
